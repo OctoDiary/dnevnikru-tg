@@ -28,3 +28,9 @@ kotlin {
 application {
     mainClass.set("MainKt")
 }
+
+tasks.named("compileKotlin", org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask::class.java) {
+    compilerOptions {
+        freeCompilerArgs.add("-Xcontext-receivers")
+    }
+}
