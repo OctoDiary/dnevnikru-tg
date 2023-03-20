@@ -6,6 +6,7 @@ plugins {
 group = "org.octodiary"
 version = "1.0-SNAPSHOT"
 val exposedVersion = "0.40.1"
+val postgresqlVersion = "42.5.4"
 
 repositories {
     mavenCentral()
@@ -19,6 +20,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+    runtimeOnly("org.postgresql:postgresql:$postgresqlVersion")
 }
 
 tasks.test {
