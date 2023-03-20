@@ -11,10 +11,15 @@ repositories {
     maven(url = "https://jitpack.io")
 }
 
+val exposedVersion: String by project
+
 dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.0.7")
+    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
 }
 
 tasks.test {
