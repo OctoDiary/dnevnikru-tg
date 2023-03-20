@@ -5,13 +5,12 @@ plugins {
 
 group = "org.octodiary"
 version = "1.0-SNAPSHOT"
+val exposedVersion = "0.40.1"
 
 repositories {
     mavenCentral()
     maven(url = "https://jitpack.io")
 }
-
-val exposedVersion: String by project
 
 dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
