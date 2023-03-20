@@ -1,5 +1,6 @@
-import com.github.kotlintelegrambot.Bot
+import com.github.kotlintelegrambot.dispatcher.handlers.CallbackQueryHandlerEnvironment
 import com.github.kotlintelegrambot.dispatcher.handlers.CommandHandlerEnvironment
+import com.github.kotlintelegrambot.dispatcher.handlers.InlineQueryHandlerEnvironment
 import com.github.kotlintelegrambot.dispatcher.handlers.MessageHandlerEnvironment
 import com.github.kotlintelegrambot.entities.ChatId
 import com.github.kotlintelegrambot.entities.Message
@@ -21,6 +22,14 @@ object Utils {
         get() = getUserState(message.from!!.id)
         set(value) = setUserState(message.from!!.id, value)
 
+    var InlineQueryHandlerEnvironment.userState: State?
+        get() = getUserState(inlineQuery.from.id)
+        set(value) = setUserState(inlineQuery.from.id, value)
+
+    var CallbackQueryHandlerEnvironment.userState: State?
+        get() = getUserState(callbackQuery.from.id)
+        set(value) = setUserState(callbackQuery.from.id, value)
+
     var Message.userState: State?
         get() = getUserState(from!!.id)
         set(value) = setUserState(from!!.id, value)
@@ -40,7 +49,7 @@ object Utils {
             }.resultedValues?.first()
             user ?: return@transaction
             Users.update({ Users.telegramId eq user[Users.telegramId] }) {
-                it[Users.state] = State.Authenticating
+                it[Users.state] = state
             }
         }
     }
@@ -95,7 +104,51 @@ object Utils {
         )
     }
 
-    fun Message.isMine(bot: Bot): Boolean {
-        return from!!.id == bot.getMe().get().id
+    fun CallbackQueryHandlerEnvironment.answer(
+        text: String,
+        parseMode: ParseMode? = null,
+        disableWebPagePreview: Boolean? = null,
+        disableNotification: Boolean? = null,
+        replyToMessageId: Long? = null,
+        allowSendingWithoutReply: Boolean? = null,
+        replyMarkup: ReplyMarkup? = null
+    ) {
+        bot.sendMessage(
+            ChatId.fromId(callbackQuery.from.id),
+            text,
+            parseMode,
+            disableWebPagePreview,
+            disableNotification,
+            replyToMessageId,
+            allowSendingWithoutReply,
+            replyMarkup
+        )
+    }
+
+    fun <T> MessageHandlerEnvironment.updateField(field: Column<T>, value: T) {
+        return transaction {
+            addLogger(StdOutSqlLogger)
+            val user = Users.select { Users.telegramId eq message.from!!.id }.firstOrNull()
+            user ?: return@transaction
+            Users.update({ Users.telegramId eq user[Users.telegramId] }) {
+                it[field] = value
+            }
+        }
+    }
+
+    fun <T> MessageHandlerEnvironment.getField(field: Column<T>): T {
+        return transaction {
+            addLogger(StdOutSqlLogger)
+            val user = Users.select { Users.telegramId eq message.from!!.id }.firstOrNull()
+            return@transaction user!![field]
+        }
+    }
+
+    fun <T> CallbackQueryHandlerEnvironment.getField(field: Column<T>): T {
+        return transaction {
+            addLogger(StdOutSqlLogger)
+            val user = Users.select { Users.telegramId eq callbackQuery.from.id }.firstOrNull()
+            return@transaction user!![field]
+        }
     }
 }
