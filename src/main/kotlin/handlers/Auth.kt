@@ -1,7 +1,9 @@
 package handlers
 
 import BaseCallback
+import NetworkService
 import Server
+import Utils.ChatType
 import Utils.answer
 import Utils.chatTypeEnum
 import Utils.f
@@ -10,7 +12,6 @@ import Utils.setUserState
 import Utils.updateField
 import Utils.updateUserField
 import Utils.userState
-import Utils.ChatType
 import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.dispatcher.*
 import com.github.kotlintelegrambot.entities.ChatId
@@ -32,8 +33,14 @@ fun commandAuth() {
         )
     )
 
+    val allowedAuthChatTypes = listOf(
+        ChatType.bot,
+        ChatType.private
+    )
+
     command("auth") {
-        if (message.chatTypeEnum != ChatType.bot || message.chatTypeEnum != ChatType.private || userState != null) return@command
+
+        if (message.chatTypeEnum !in allowedAuthChatTypes || userState != null) return@command
 
         userState = State.AuthSelectServer
         answer(
@@ -73,33 +80,36 @@ fun commandAuth() {
             )
         )
         val chatId = ChatId.fromId(telegramUserId)
-        call.enqueue(object: BaseCallback<NetworkService.AuthResult>(
-            {
+
+        val handleAuthError: (NetworkService.DnevnikError) -> Unit = {
+            if (it.reason == "HaveNotActiveMemberships") {
+                bot.sendMessage(chatId, "Ребёнок не участвует в учебном процессе")
+            } else {
+                bot.sendMessage(chatId, it.description)
+                setUserState(telegramUserId, State.AuthSelectServer)
+                bot.sendMessage(chatId, "Выберите дневник", replyMarkup = serversKeyboardReplyMarkup)
+            }
+        }
+        call.enqueue(object : BaseCallback<NetworkService.AuthResult>(
+            okHandler = {
                 if (it.credentials != null && it.type == "Success") {
                     updateUserField(telegramUserId, Users.accessToken, it.credentials.accessToken)
                     updateUserField(telegramUserId, Users.userId, it.credentials.userId)
                     setUserState(telegramUserId, State.Authorized)
 
                     bot.sendMessage(chatId, "Успешная авторизация!")
-                } else if (it.reason == "HaveNotActiveMemberships") {
-                    bot.sendMessage(chatId, "Ребёнок не участвует в учебном процессе")
-                } else if (it.type == "Error") {
-                    bot.sendMessage(chatId, "Неправильное имя пользователя и/или пароль! ${it.type}")
-                    setUserState(telegramUserId, State.AuthSelectServer)
-                    bot.sendMessage(chatId, "Выберите дневник", replyMarkup = serversKeyboardReplyMarkup)
-                }
+                } else handleAuthError(NetworkService.DnevnikError(it.reason, it.type, it.description))
             },
-            {
+            errorHandler = {
                 if (it?.reason == "HaveNotActiveMemberships") {
                     bot.sendMessage(chatId, "Ребёнок не участвует в учебном процессе")
-                } else if (it?.type == "Error") {
-                    bot.sendMessage(chatId, "Неправильное имя пользователя и/или пароль!")
-                    setUserState(telegramUserId, State.AuthSelectServer)
-                    bot.sendMessage(chatId, "Выберите дневник", replyMarkup = serversKeyboardReplyMarkup)
-                }
+                } else handleAuthError(it!!)
             },
-            {
-                // ...
+            failureHandler = {
+                bot.sendMessage(
+                    chatId,
+                    "Извините, произошла незвестная ошиба (auth.failureHandler). Пожалуйста, начните авторизацию заново: /auth."
+                )
             }
         ) {})
     }
