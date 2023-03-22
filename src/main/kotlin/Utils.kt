@@ -9,10 +9,19 @@ import com.github.kotlintelegrambot.entities.ReplyMarkup
 import com.github.kotlintelegrambot.extensions.filters.Filter
 import db_models.State
 import db_models.Users
+import db_models.Users.nullable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object Utils {
+
+    enum class ChatType {
+        private,
+        supergroup,
+        group,
+        bot,
+        channel
+    }
 
     var MessageHandlerEnvironment.userState: State?
         get() = getUserState(message.from!!.id)
@@ -41,7 +50,7 @@ object Utils {
         }
     }
 
-    private fun setUserState(tgId: Long, state: State?) {
+    fun setUserState(tgId: Long, state: State?) {
         return transaction {
             addLogger(StdOutSqlLogger)
             val user = Users.select { Users.telegramId eq tgId }.firstOrNull() ?: Users.insert {
@@ -135,6 +144,20 @@ object Utils {
             }
         }
     }
+
+    fun <T> updateUserField(telegramUserId: Long, field: Column<T>, value: T) {
+        return transaction {
+            addLogger(StdOutSqlLogger)
+            val user = Users.select { Users.telegramId eq telegramUserId }.firstOrNull()
+            user ?: return@transaction
+            Users.update({ Users.telegramId eq user[Users.telegramId] }) {
+                it[field] = value
+            }
+        }
+    }
+
+    val Message.chatTypeEnum: ChatType
+        get() = ChatType.valueOf(chat.type)
 
     fun <T> MessageHandlerEnvironment.getField(field: Column<T>): T {
         return transaction {

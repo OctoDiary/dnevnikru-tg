@@ -20,7 +20,7 @@ object NetworkService {
     }
 
     data class AuthResult(
-        val credentials: AuthResultCredentials,
+        val credentials: AuthResultCredentials?,
         val reason: String,
         val type: String
     )
@@ -28,6 +28,11 @@ object NetworkService {
     data class AuthResultCredentials(
         val accessToken: String,
         val userId: Long,
+    )
+
+    data class DnevnikError(
+        val reason: String,
+        val type: String,
     )
 
     data class AuthRequestBody(

@@ -1,11 +1,12 @@
-import okhttp3.ResponseBody
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 abstract class BaseCallback<T>(
     private val okHandler: (T) -> Unit,
-    private val errorHandler: (ResponseBody?) -> Unit,
+    private val errorHandler: (NetworkService.DnevnikError?) -> Unit,
     private val failureHandler: (Throwable) -> Unit
 ) : Callback<T> {
     override fun onResponse(call: Call<T>, response: Response<T>) {
@@ -13,7 +14,7 @@ abstract class BaseCallback<T>(
         if (response.isSuccessful && body != null) {
             okHandler(body)
         } else {
-            errorHandler(response.errorBody())
+            errorHandler(Gson().fromJson(response.errorBody()!!.charStream(), object : TypeToken<NetworkService.DnevnikError>() {}.type))
         }
     }
 

@@ -4,5 +4,5 @@ enum class State {
     AuthSelectServer,
     AuthEnterUsername,
     AuthEnterPassword,
-    Rest
+    Authorized
 }
