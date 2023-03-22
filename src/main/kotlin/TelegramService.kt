@@ -3,6 +3,7 @@ import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.Dispatcher
 import handlers.commandAuth
+import handlers.commandDiary
 import org.jetbrains.exposed.sql.Database
 
 class TelegramService(
@@ -29,6 +30,7 @@ class TelegramService(
     context(Dispatcher)
     private fun dispatcher() {
         commandAuth()
+        commandDiary()
     }
 
 }

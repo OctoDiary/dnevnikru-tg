@@ -108,7 +108,7 @@ fun commandAuth() {
             failureHandler = {
                 bot.sendMessage(
                     chatId,
-                    "Извините, произошла незвестная ошиба (auth.failureHandler). Пожалуйста, начните авторизацию заново: /auth."
+                    "Извините, произошла незвестная ошибка (auth.failureHandler). Пожалуйста, начните авторизацию заново: /auth."
                 )
             }
         ) {})

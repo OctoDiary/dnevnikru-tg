@@ -1,3 +1,4 @@
+import com.github.kotlintelegrambot.Bot
 import com.github.kotlintelegrambot.dispatcher.handlers.CallbackQueryHandlerEnvironment
 import com.github.kotlintelegrambot.dispatcher.handlers.CommandHandlerEnvironment
 import com.github.kotlintelegrambot.dispatcher.handlers.InlineQueryHandlerEnvironment
@@ -145,6 +146,14 @@ object Utils {
         }
     }
 
+    fun <T> getUserField(telegramUserId: Long, field: Column<T>): T? {
+        return transaction {
+            addLogger(StdOutSqlLogger)
+            val user = Users.select { Users.telegramId eq telegramUserId }.firstOrNull()
+            return@transaction user?.get(field)
+        }
+    }
+
     fun <T> updateUserField(telegramUserId: Long, field: Column<T>, value: T) {
         return transaction {
             addLogger(StdOutSqlLogger)
@@ -172,6 +181,26 @@ object Utils {
             addLogger(StdOutSqlLogger)
             val user = Users.select { Users.telegramId eq callbackQuery.from.id }.firstOrNull()
             return@transaction user!![field]
+        }
+    }
+
+    fun handleResponseError(telegramUserId: Long, bot: Bot, dnevnikError: NetworkService.DnevnikError): () -> Unit {
+        val chatId = ChatId.fromId(telegramUserId)
+        return {
+            if (dnevnikError.reason == "HaveNotActiveMemberships") {
+                bot.sendMessage(chatId, "Ребёнок не участвует в учебном процессе")
+            } else {
+                bot.sendMessage(chatId, "Произошла неизвестная ошибка!\nОписание: ```${dnevnikError.description}```", parseMode = ParseMode.MARKDOWN_V2)
+            }
+        }
+    }
+    fun responseFailureHandler(telegramUserId: Long, bot: Bot): (it: Throwable) -> Unit {
+        val chatId = ChatId.fromId(telegramUserId)
+        return {
+            bot.sendMessage(
+                chatId,
+                "Извините, произошла незвестная ошибка (auth.failureHandler). Пожалуйста, начните авторизацию заново: /auth."
+            )
         }
     }
 }
